@@ -19,6 +19,12 @@
         <!-- Interactive Orientation Gizmo (Corner ViewCube) -->
         <div id="gizmo-container" class="gizmo-container" title="Click axes to change view"></div>
 
+        <!-- Recording Indicator Badge -->
+        <div id="recording-badge" class="recording-badge hidden">
+          <span class="rec-dot"></span>
+          <span id="rec-timer">REC 5s</span>
+        </div>
+
         <!-- Floating Quick View Pill Overlay (Bottom/Center on mobile, Bottom/Left on desktop) -->
         <nav class="quick-dock" aria-label="Quick 3D Controls">
           <button id="btn-fit" class="dock-btn" title="Fit to View (F)" aria-label="Fit to View">
@@ -122,6 +128,11 @@
           <!-- Snapshot Screenshot -->
           <button id="btn-snapshot" class="icon-btn" title="Take Screenshot (S)" aria-label="Take Screenshot">
             <i data-lucide="camera"></i>
+          </button>
+
+          <!-- Record Turntable Video -->
+          <button id="btn-record-video" class="icon-btn" title="Record 360° Turntable Video" aria-label="Record Video">
+            <i data-lucide="video"></i>
           </button>
 
           <!-- Fullscreen -->

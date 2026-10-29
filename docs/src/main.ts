@@ -41,6 +41,7 @@ import { OrientationGizmo } from './orientationGizmo.ts';
 import { parseSTL, type LoadedModel } from './stlLoader.ts';
 import { SAMPLE_MODELS, geometryToSTLBuffer } from './sampleModels.ts';
 import { decimateGeometry } from './meshDecimator.ts';
+import { TurntableRecorder } from './videoRecorder.ts';
 import type { CameraView, LightingPreset, ShadingMode, ViewerOptions } from './types.ts';
 
 // Initialize Lucide icons
@@ -114,6 +115,7 @@ const defaultOptions: ViewerOptions = {
 // Application State
 let viewer: STLViewer;
 let gizmo: OrientationGizmo;
+let recorder: TurntableRecorder;
 let currentBuffer: ArrayBuffer | null = null;
 let originalBuffer: ArrayBuffer | null = null;
 let currentFileName = 'model.stl';
@@ -149,7 +151,10 @@ const btnPanelToggle = document.getElementById('btn-panel-toggle') as HTMLButton
 const fileAddInput = document.getElementById('file-add-input') as HTMLInputElement;
 const btnDownloadStl = document.getElementById('btn-download-stl') as HTMLButtonElement;
 const btnSnapshot = document.getElementById('btn-snapshot') as HTMLButtonElement;
+const btnRecordVideo = document.getElementById('btn-record-video') as HTMLButtonElement;
 const btnFullscreen = document.getElementById('btn-fullscreen') as HTMLButtonElement;
+const recordingBadge = document.getElementById('recording-badge') as HTMLElement;
+const recTimer = document.getElementById('rec-timer') as HTMLElement;
 
 // Inspector Elements
 const inspectorPanel = document.getElementById('inspector-panel') as HTMLElement;
@@ -968,6 +973,38 @@ function setupEventHandlers() {
     showToast('Saved high-resolution snapshot');
   });
 
+  // Record Turntable Video
+  btnRecordVideo.addEventListener('click', () => {
+    if (recorder.isRecording) return;
+
+    const prevAutoRotate = viewer.getOptions().autoRotate;
+    const prevSpeed = viewer.getOptions().autoRotateSpeed;
+
+    viewer.setOptions({ autoRotate: true, autoRotateSpeed: 4.0 });
+    btnRecordVideo.classList.add('recording');
+    recordingBadge.classList.remove('hidden');
+
+    recorder.startRecording(
+      5000,
+      (remaining) => {
+        recTimer.textContent = `REC ${remaining}s`;
+      },
+      (videoBlob) => {
+        viewer.setOptions({ autoRotate: prevAutoRotate, autoRotateSpeed: prevSpeed });
+        btnRecordVideo.classList.remove('recording');
+        recordingBadge.classList.add('hidden');
+
+        const url = URL.createObjectURL(videoBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${currentFileName.replace(/\.stl$/i, '')}-turntable.webm`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('Turntable video saved');
+      }
+    );
+  });
+
   // Fullscreen
   btnFullscreen.addEventListener('click', () => {
     if (!document.fullscreenElement) {
@@ -1026,6 +1063,9 @@ function init() {
 
   // Initialize Three.js STL Viewer
   viewer = new STLViewer(viewportContainer, defaultOptions);
+
+  // Initialize Video Recorder
+  recorder = new TurntableRecorder(viewer.canvas);
 
   // Initialize Interactive Corner Gizmo
   gizmo = new OrientationGizmo(gizmoContainer, viewer.activeCamera, (view) => {
