@@ -106,6 +106,12 @@
             <input type="file" id="file-input" accept=".stl" class="sr-only" />
           </label>
 
+          <!-- Add Part to Assembly -->
+          <label for="file-add-input" class="icon-btn" title="Add Part to Assembly (+)">
+            <i data-lucide="plus"></i>
+            <input type="file" id="file-add-input" accept=".stl" class="sr-only" />
+          </label>
+
           <!-- Download Active STL -->
           <button id="btn-download-stl" class="icon-btn" title="Download current STL" aria-label="Download STL">
             <i data-lucide="download"></i>
@@ -148,6 +154,10 @@
           <button class="tab-btn" data-tab="tab-section" role="tab" aria-selected="false">
             <i data-lucide="scissors"></i>
             <span>Slice</span>
+          </button>
+          <button class="tab-btn" data-tab="tab-assembly" role="tab" aria-selected="false">
+            <i data-lucide="layers"></i>
+            <span>Assembly</span>
           </button>
           <button class="tab-btn" data-tab="tab-scene" role="tab" aria-selected="false">
             <i data-lucide="sun"></i>
@@ -431,6 +441,29 @@
               <div class="toggle-row">
                 <label for="toggle-clip-invert" class="toggle-label">Invert Cut Direction</label>
                 <input type="checkbox" id="toggle-clip-invert" class="glass-switch" />
+              </div>
+            </div>
+          </section>
+
+          <!-- TAB 5: ASSEMBLY -->
+          <section id="tab-assembly" class="tab-pane hidden" role="tabpanel">
+            <div class="section-block">
+              <div class="section-header-flex">
+                <h3 class="section-title">Assembly Parts</h3>
+                <button id="btn-clear-assembly" class="text-btn">Clear All</button>
+              </div>
+              <div id="assembly-parts-list" class="measurements-list">
+                <p class="text-dim text-center py-4 text-xs">No extra parts added yet. Click "+ Add Part" in the top bar to load multiple STLs into an assembly.</p>
+              </div>
+            </div>
+
+            <div id="exploded-view-control" class="section-block disabled">
+              <div class="slider-control">
+                <div class="slider-header">
+                  <label for="exploded-slider">Exploded View Spread</label>
+                  <span id="exploded-val" class="slider-val">0%</span>
+                </div>
+                <input type="range" id="exploded-slider" min="0" max="100" step="1" value="0" />
               </div>
             </div>
           </section>

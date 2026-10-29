@@ -5,6 +5,7 @@ import { MeasurementTool } from './measurementTool.ts';
 import { computeOverhangColors, type OverhangAnalysis } from './overhangAnalyzer.ts';
 import { BuildPlateManager, type FitResult } from './buildPlate.ts';
 import { analyzeMeshTopology, type MeshDiagnosticReport } from './meshDiagnostics.ts';
+import { AssemblyManager } from './assemblyManager.ts';
 
 export class STLViewer {
   public container: HTMLElement;
@@ -17,6 +18,7 @@ export class STLViewer {
   public controls: OrbitControls;
   public measurementTool: MeasurementTool;
   public buildPlate: BuildPlateManager;
+  public assembly: AssemblyManager;
 
   // Scene elements
   private modelGroup: THREE.Group;
@@ -125,6 +127,9 @@ export class STLViewer {
 
     // Build Plate Manager
     this.buildPlate = new BuildPlateManager(this.scene);
+
+    // Assembly Manager
+    this.assembly = new AssemblyManager(this.scene);
 
     // Listen to resize
     window.addEventListener('resize', this.onResize);
@@ -912,6 +917,7 @@ export class STLViewer {
     this.controls.dispose();
     this.measurementTool.destroy();
     this.buildPlate.destroy();
+    this.assembly.destroy();
     this.renderer.dispose();
   }
 }

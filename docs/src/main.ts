@@ -29,7 +29,12 @@ import {
   Check,
   Ruler,
   Sparkles,
-  Shrink
+  Shrink,
+  Plus,
+  Layers,
+  Eye,
+  EyeOff,
+  Trash2
 } from 'lucide';
 import { STLViewer } from './viewer.ts';
 import { OrientationGizmo } from './orientationGizmo.ts';
@@ -71,6 +76,11 @@ function refreshIcons() {
       Ruler,
       Sparkles,
       Shrink,
+      Plus,
+      Layers,
+      Eye,
+      EyeOff,
+      Trash2,
     },
   });
 }
@@ -136,6 +146,7 @@ const measurementsList = document.getElementById('measurements-list') as HTMLEle
 const btnPanelToggle = document.getElementById('btn-panel-toggle') as HTMLButtonElement;
 
 // Nav action buttons
+const fileAddInput = document.getElementById('file-add-input') as HTMLInputElement;
 const btnDownloadStl = document.getElementById('btn-download-stl') as HTMLButtonElement;
 const btnSnapshot = document.getElementById('btn-snapshot') as HTMLButtonElement;
 const btnFullscreen = document.getElementById('btn-fullscreen') as HTMLButtonElement;
@@ -178,6 +189,13 @@ const btnAutoOrient = document.getElementById('btn-auto-orient') as HTMLButtonEl
 const btnRotX = document.getElementById('btn-rot-x') as HTMLButtonElement;
 const btnRotY = document.getElementById('btn-rot-y') as HTMLButtonElement;
 const btnRotZ = document.getElementById('btn-rot-z') as HTMLButtonElement;
+
+// Assembly Controls
+const assemblyPartsList = document.getElementById('assembly-parts-list') as HTMLElement;
+const btnClearAssembly = document.getElementById('btn-clear-assembly') as HTMLButtonElement;
+const explodedViewControl = document.getElementById('exploded-view-control') as HTMLElement;
+const explodedSlider = document.getElementById('exploded-slider') as HTMLInputElement;
+const explodedVal = document.getElementById('exploded-val') as HTMLElement;
 
 // Filament Estimator Elements
 const calcMaterial = document.getElementById('calc-material') as HTMLSelectElement;
@@ -777,6 +795,105 @@ function setupEventHandlers() {
       loadSTLBuffer(originalBuffer, currentFileName, false);
       showToast('Restored original full-resolution geometry');
     }
+  });
+
+  // Assembly Handlers
+  const assemblyColors = ['#f97316', '#10b981', '#06b6d4', '#ec4899', '#eab308', '#8b5cf6'];
+  let colorIdx = 0;
+
+  fileAddInput.addEventListener('change', (e) => {
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files.length > 0) {
+      const file = target.files[0];
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result instanceof ArrayBuffer) {
+          const loaded = parseSTL(event.target.result, file.name);
+          const color = assemblyColors[colorIdx % assemblyColors.length];
+          colorIdx++;
+          viewer.assembly.addPart(loaded.geometry, file.name, color);
+          // Switch to assembly tab and open inspector
+          inspectorPanel.classList.remove('panel-collapsed');
+          btnPanelToggle.classList.add('active');
+          tabButtons.forEach((b) => {
+            const isAss = b.getAttribute('data-tab') === 'tab-assembly';
+            b.classList.toggle('active', isAss);
+            b.setAttribute('aria-selected', isAss ? 'true' : 'false');
+          });
+          tabPanes.forEach((p) => p.classList.add('hidden'));
+          document.getElementById('tab-assembly')?.classList.remove('hidden');
+          showToast(`Added ${file.name} to assembly`);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+  });
+
+  viewer.assembly.onPartsChange = (parts) => {
+    if (parts.length === 0) {
+      assemblyPartsList.innerHTML = `<p class="text-dim text-center py-4 text-xs">No extra parts added yet. Click "+ Add Part" in the top bar to load multiple STLs into an assembly.</p>`;
+      explodedViewControl.classList.add('disabled');
+      return;
+    }
+
+    explodedViewControl.classList.toggle('disabled', parts.length <= 1);
+    assemblyPartsList.innerHTML = parts
+      .map(
+        (part) => `
+        <div class="assembly-item">
+          <div class="assembly-part-info">
+            <input type="color" class="part-color-input" data-part-color="${part.id}" value="${part.color}" title="Change Part Color" />
+            <span class="assembly-part-name" title="${part.name}">${part.name}</span>
+          </div>
+          <div class="assembly-actions">
+            <button class="icon-btn" data-toggle-vis="${part.id}" title="${part.visible ? 'Hide Part' : 'Show Part'}">
+              <i data-lucide="${part.visible ? 'eye' : 'eye-off'}"></i>
+            </button>
+            <button class="icon-btn" data-delete-part="${part.id}" title="Remove Part">
+              <i data-lucide="trash-2"></i>
+            </button>
+          </div>
+        </div>
+      `
+      )
+      .join('');
+
+    refreshIcons();
+
+    assemblyPartsList.querySelectorAll<HTMLInputElement>('[data-part-color]').forEach((input) => {
+      input.addEventListener('input', () => {
+        const id = input.getAttribute('data-part-color')!;
+        viewer.assembly.setPartColor(id, input.value);
+      });
+    });
+
+    assemblyPartsList.querySelectorAll<HTMLButtonElement>('[data-toggle-vis]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-toggle-vis')!;
+        const part = viewer.assembly.parts.find((p) => p.id === id);
+        if (part) {
+          viewer.assembly.setPartVisibility(id, !part.visible);
+        }
+      });
+    });
+
+    assemblyPartsList.querySelectorAll<HTMLButtonElement>('[data-delete-part]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-delete-part')!;
+        viewer.assembly.removePart(id);
+      });
+    });
+  };
+
+  explodedSlider.addEventListener('input', () => {
+    const val = parseFloat(explodedSlider.value);
+    explodedVal.textContent = `${val}%`;
+    viewer.assembly.setExplodedProgress(val / 100);
+  });
+
+  btnClearAssembly.addEventListener('click', () => {
+    viewer.assembly.clear();
+    showToast('Assembly cleared');
   });
 
   // Grid / Shadow / BBox Toggles

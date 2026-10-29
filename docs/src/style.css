@@ -793,6 +793,54 @@ html, body {
   gap: 6px;
 }
 
+.text-center { text-align: center; }
+.text-xs { font-size: 0.75rem; }
+.py-4 { padding-top: 16px; padding-bottom: 16px; }
+
+.assembly-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.assembly-part-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.assembly-part-name {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 130px;
+}
+
+.assembly-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.part-color-input {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  padding: 0;
+  background: none;
+}
+
 /* Shading Pill Buttons */
 .shading-pill-group {
   display: grid;
