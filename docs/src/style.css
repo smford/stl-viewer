@@ -751,6 +751,15 @@ html, body {
   font-weight: 600;
 }
 
+.badge-danger {
+  color: #f87171;
+  font-weight: 600;
+}
+
+.mb-2 {
+  margin-bottom: 8px;
+}
+
 /* Shading Pill Buttons */
 .shading-pill-group {
   display: grid;

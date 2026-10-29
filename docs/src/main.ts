@@ -172,6 +172,9 @@ const toggleClipInvert = document.getElementById('toggle-clip-invert') as HTMLIn
 
 // Studio Controls
 const lightButtons = document.querySelectorAll<HTMLButtonElement>('[data-light]');
+const printerSelect = document.getElementById('printer-select') as HTMLSelectElement;
+const printerFitCard = document.getElementById('printer-fit-card') as HTMLElement;
+const printerFitBadge = document.getElementById('printer-fit-badge') as HTMLElement;
 const toggleGrid = document.getElementById('toggle-grid') as HTMLInputElement;
 const toggleShadows = document.getElementById('toggle-shadows') as HTMLInputElement;
 const toggleBbox = document.getElementById('toggle-bbox') as HTMLInputElement;
@@ -191,6 +194,31 @@ function showToast(message: string, duration = 3000) {
   setTimeout(() => {
     toast.remove();
   }, duration + 300);
+}
+
+/**
+ * Update Printer Build Volume Clearance Display
+ */
+function updatePrinterFitUI() {
+  const presetId = printerSelect.value || null;
+  viewer.buildPlate.setPreset(presetId);
+  if (!presetId) {
+    printerFitCard.classList.add('hidden');
+    return;
+  }
+
+  const fit = viewer.buildPlate.checkFit(viewer.getBoundingBox());
+  printerFitCard.classList.remove('hidden');
+  if (fit.fits) {
+    printerFitBadge.textContent = 'Fits on Bed';
+    printerFitBadge.className = 'info-val badge-ok';
+  } else {
+    const exceeded = [fit.exceedsX ? 'X' : '', fit.exceedsY ? 'Y' : '', fit.exceedsZ ? 'Z' : '']
+      .filter(Boolean)
+      .join(', ');
+    printerFitBadge.textContent = `Exceeds (${exceeded})`;
+    printerFitBadge.className = 'info-val badge-danger';
+  }
 }
 
 /**
@@ -226,6 +254,9 @@ function updateStatsUI(loaded: LoadedModel) {
 
   // Recalculate clipping slider values based on model bounding box
   syncClippingPlane();
+
+  // Check printer build plate clearance
+  updatePrinterFitUI();
 
   if (viewer.getOptions().shadingMode === 'overhang') {
     const analysis = viewer.getOverhangAnalysis();
@@ -599,7 +630,7 @@ function setupEventHandlers() {
     syncClippingPlane();
   });
 
-  // Lighting Presets
+  // Studio Lighting Presets
   lightButtons.forEach((btn) => {
     btn.addEventListener('click', () => {
       lightButtons.forEach((b) => b.classList.remove('active'));
@@ -608,6 +639,9 @@ function setupEventHandlers() {
       viewer.setOptions({ lightingPreset: preset });
     });
   });
+
+  // Printer Build Volume Selector
+  printerSelect.addEventListener('change', updatePrinterFitUI);
 
   // Grid / Shadow / BBox Toggles
   toggleGrid.addEventListener('change', () => {

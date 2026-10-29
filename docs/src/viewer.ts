@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { CameraView, LightingPreset, ViewerOptions } from './types.ts';
 import { MeasurementTool } from './measurementTool.ts';
 import { computeOverhangColors, type OverhangAnalysis } from './overhangAnalyzer.ts';
+import { BuildPlateManager, type FitResult } from './buildPlate.ts';
 
 export class STLViewer {
   public container: HTMLElement;
@@ -14,6 +15,7 @@ export class STLViewer {
   public activeCamera: THREE.PerspectiveCamera | THREE.OrthographicCamera;
   public controls: OrbitControls;
   public measurementTool: MeasurementTool;
+  public buildPlate: BuildPlateManager;
 
   // Scene elements
   private modelGroup: THREE.Group;
@@ -116,6 +118,9 @@ export class STLViewer {
 
     // Measurement Tool
     this.measurementTool = new MeasurementTool(this.scene, this.activeCamera, this.canvas);
+
+    // Build Plate Manager
+    this.buildPlate = new BuildPlateManager(this.scene);
 
     // Listen to resize
     window.addEventListener('resize', this.onResize);
@@ -285,6 +290,9 @@ export class STLViewer {
 
     // Update clipping limits
     this.updateClipping();
+
+    // Check build plate fit
+    this.buildPlate.checkFit(this.modelBoundingBox);
 
     // Fit camera to new model
     this.fitCameraToModel(true);
@@ -541,6 +549,10 @@ export class STLViewer {
     return this.modelBoundingBox;
   }
 
+  public checkPrintBedFit(): FitResult {
+    return this.buildPlate.checkFit(this.modelBoundingBox);
+  }
+
   public switchCameraType(type: 'perspective' | 'orthographic') {
     const prevCam = this.activeCamera;
     const target = this.controls.target.clone();
@@ -735,6 +747,7 @@ export class STLViewer {
     window.removeEventListener('resize', this.onResize);
     this.controls.dispose();
     this.measurementTool.destroy();
+    this.buildPlate.destroy();
     this.renderer.dispose();
   }
 }

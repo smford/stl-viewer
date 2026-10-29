@@ -336,6 +336,24 @@
           <!-- TAB 4: STUDIO & ENVIRONMENT -->
           <section id="tab-scene" class="tab-pane hidden" role="tabpanel">
             <div class="section-block">
+              <h3 class="section-title">3D Printer Build Volume</h3>
+              <div class="sample-select-wrapper w-full mb-2">
+                <select id="printer-select" class="glass-select w-full" aria-label="Select 3D Printer">
+                  <option value="">None (Infinite Grid)</option>
+                  <option value="bambu-x1">Bambu Lab X1 / P1 (256×256×256)</option>
+                  <option value="prusa-mk4">Prusa MK3 / MK4 (250×210×220)</option>
+                  <option value="ender-3">Creality Ender 3 (220×220×250)</option>
+                  <option value="voron-350">Voron 2.4 (350×350×350)</option>
+                  <option value="mars-4">Elegoo Mars 4 (153×77×175)</option>
+                </select>
+              </div>
+              <div id="printer-fit-card" class="info-row hidden">
+                <span class="info-key">Bed Clearance</span>
+                <span id="printer-fit-badge" class="info-val badge-ok">Fits on Bed</span>
+              </div>
+            </div>
+
+            <div class="section-block">
               <h3 class="section-title">Lighting Setup</h3>
               <div class="shading-pill-group">
                 <button class="pill-btn active" data-light="studio">Studio</button>
