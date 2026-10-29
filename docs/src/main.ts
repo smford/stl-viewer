@@ -1048,10 +1048,64 @@ function init() {
     btnPanelToggle.classList.add('active');
   }
 
-  // Load default sample model: Mechanical Gear
-  const defaultSample = SAMPLE_MODELS[0];
-  const buffer = defaultSample.getBuffer();
-  loadSTLBuffer(buffer, `${defaultSample.name}.stl`);
+  // Register PWA Service Worker
+  if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+    navigator.serviceWorker.register('./sw.js').catch((err) => {
+      console.warn('Service worker registration failed:', err);
+    });
+  }
+
+  // OS File Handler (PWA file_handlers API)
+  if ('launchQueue' in window) {
+    (window as any).launchQueue?.setConsumer(async (launchParams: any) => {
+      if (launchParams.files && launchParams.files.length > 0) {
+        const fileHandle = launchParams.files[0];
+        const file = await fileHandle.getFile();
+        const buffer = await file.arrayBuffer();
+        loadSTLBuffer(buffer, file.name);
+      }
+    });
+  }
+
+  // Load Model: URL parameter or sample
+  const loadDefaultSample = () => {
+    const defaultSample = SAMPLE_MODELS[0];
+    const buffer = defaultSample.getBuffer();
+    loadSTLBuffer(buffer, `${defaultSample.name}.stl`);
+  };
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const remoteUrl = urlParams.get('url');
+  const sampleParam = urlParams.get('sample');
+
+  if (remoteUrl) {
+    loadingOverlay.classList.remove('hidden');
+    loadingText.textContent = 'Fetching remote STL model...';
+    fetch(remoteUrl)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.arrayBuffer();
+      })
+      .then((buf) => {
+        const filename = remoteUrl.split('/').pop()?.split('?')[0] || 'remote_model.stl';
+        loadSTLBuffer(buf, filename);
+      })
+      .catch((err) => {
+        console.error('Remote STL fetch error:', err);
+        showToast(`Failed to load remote STL: ${err.message}`);
+        loadDefaultSample();
+      });
+  } else if (sampleParam) {
+    const match = SAMPLE_MODELS.find((s) => s.id === sampleParam);
+    if (match) {
+      sampleSelect.value = match.id;
+      loadSTLBuffer(match.getBuffer(), `${match.name}.stl`);
+    } else {
+      loadDefaultSample();
+    }
+  } else {
+    loadDefaultSample();
+  }
 
   // Initial gizmo render
   gizmo.update(viewer.controls.target);
