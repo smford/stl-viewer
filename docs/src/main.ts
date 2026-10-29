@@ -25,7 +25,8 @@ import {
   Sun,
   Pipette,
   UploadCloud,
-  Check
+  Check,
+  Ruler
 } from 'lucide';
 import { STLViewer } from './viewer.ts';
 import { OrientationGizmo } from './orientationGizmo.ts';
@@ -63,6 +64,7 @@ function refreshIcons() {
       Pipette,
       UploadCloud,
       Check,
+      Ruler,
     },
   });
 }
@@ -116,6 +118,11 @@ const btnAutoRotate = document.getElementById('btn-autorotate') as HTMLButtonEle
 const btnCamToggle = document.getElementById('btn-cam-toggle') as HTMLButtonElement;
 const camTypeLabel = document.getElementById('cam-type-label') as HTMLElement;
 const btnWireframeToggle = document.getElementById('btn-wireframe-toggle') as HTMLButtonElement;
+const btnMeasureToggle = document.getElementById('btn-measure-toggle') as HTMLButtonElement;
+const btnMeasurePanelToggle = document.getElementById('btn-measure-panel-toggle') as HTMLButtonElement;
+const measureBtnText = document.getElementById('measure-btn-text') as HTMLElement;
+const btnClearMeasurements = document.getElementById('btn-clear-measurements') as HTMLButtonElement;
+const measurementsList = document.getElementById('measurements-list') as HTMLElement;
 const btnPanelToggle = document.getElementById('btn-panel-toggle') as HTMLButtonElement;
 
 // Nav action buttons
@@ -380,6 +387,60 @@ function setupEventHandlers() {
     btnWireframeToggle.classList.toggle('active', !current);
   });
 
+  // Measurement Tool Toggle
+  const toggleMeasurementMode = () => {
+    const isMeasuring = !viewer.measurementTool.isMeasuring;
+    if (isMeasuring) {
+      viewer.measurementTool.startMeasuring();
+      btnMeasureToggle.classList.add('active');
+      btnMeasurePanelToggle.classList.add('active');
+      measureBtnText.textContent = 'Measuring... (Click 2 points)';
+      showToast('Click two points on the model to measure');
+    } else {
+      viewer.measurementTool.stopMeasuring();
+      btnMeasureToggle.classList.remove('active');
+      btnMeasurePanelToggle.classList.remove('active');
+      measureBtnText.textContent = 'Start Measuring';
+    }
+  };
+
+  btnMeasureToggle.addEventListener('click', toggleMeasurementMode);
+  btnMeasurePanelToggle.addEventListener('click', toggleMeasurementMode);
+
+  btnClearMeasurements.addEventListener('click', () => {
+    viewer.measurementTool.clear();
+    showToast('Measurements cleared');
+  });
+
+  viewer.measurementTool.onMeasurementChange = (measurements) => {
+    if (measurements.length === 0) {
+      measurementsList.classList.add('hidden');
+      btnClearMeasurements.classList.add('hidden');
+      measurementsList.innerHTML = '';
+      return;
+    }
+
+    measurementsList.classList.remove('hidden');
+    btnClearMeasurements.classList.remove('hidden');
+    measurementsList.innerHTML = measurements
+      .map(
+        (m, i) => `
+        <div class="measurement-item">
+          <div class="meas-main">
+            <span class="stat-label">Measure #${i + 1}</span>
+            <span class="meas-dist font-mono">${m.distance.toFixed(2)} mm</span>
+          </div>
+          <div class="meas-deltas font-mono">
+            <span>ΔX: ${m.deltaX.toFixed(2)}</span>
+            <span>ΔY: ${m.deltaY.toFixed(2)}</span>
+            <span>ΔZ: ${m.deltaZ.toFixed(2)}</span>
+          </div>
+        </div>
+      `
+      )
+      .join('');
+  };
+
   // Inspector Panel Toggle
   const toggleInspector = () => {
     inspectorPanel.classList.toggle('panel-collapsed');
@@ -579,6 +640,9 @@ function setupEventHandlers() {
         break;
       case 'w':
         btnWireframeToggle.click();
+        break;
+      case 'm':
+        btnMeasureToggle.click();
         break;
       case 'p':
         btnCamToggle.click();

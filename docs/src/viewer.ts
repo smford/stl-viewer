@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { CameraView, LightingPreset, ViewerOptions } from './types.ts';
+import { MeasurementTool } from './measurementTool.ts';
 
 export class STLViewer {
   public container: HTMLElement;
@@ -11,6 +12,7 @@ export class STLViewer {
   public orthographicCamera: THREE.OrthographicCamera;
   public activeCamera: THREE.PerspectiveCamera | THREE.OrthographicCamera;
   public controls: OrbitControls;
+  public measurementTool: MeasurementTool;
 
   // Scene elements
   private modelGroup: THREE.Group;
@@ -109,6 +111,9 @@ export class STLViewer {
     // Setup Lighting & Environment
     this.setupLights();
     this.setupGridAndGround();
+
+    // Measurement Tool
+    this.measurementTool = new MeasurementTool(this.scene, this.activeCamera, this.canvas);
 
     // Listen to resize
     window.addEventListener('resize', this.onResize);
@@ -258,6 +263,7 @@ export class STLViewer {
     this.currentMesh.castShadow = true;
     this.currentMesh.receiveShadow = true;
     this.modelGroup.add(this.currentMesh);
+    this.measurementTool.setModel(this.currentMesh);
 
     // Create wireframe overlay mesh
     const wireMat = new THREE.MeshBasicMaterial({
@@ -528,6 +534,7 @@ export class STLViewer {
 
     this.controls.object = this.activeCamera;
     this.controls.update();
+    this.measurementTool.setCamera(this.activeCamera);
     this.onCameraChange?.();
   }
 
@@ -690,6 +697,7 @@ export class STLViewer {
     }
     window.removeEventListener('resize', this.onResize);
     this.controls.dispose();
+    this.measurementTool.destroy();
     this.renderer.dispose();
   }
 }

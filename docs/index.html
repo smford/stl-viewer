@@ -55,6 +55,11 @@
             <span class="dock-label">Wire</span>
           </button>
 
+          <button id="btn-measure-toggle" class="dock-btn" title="Point-to-Point Caliper (M)" aria-label="Measure">
+            <i data-lucide="ruler"></i>
+            <span class="dock-label">Measure</span>
+          </button>
+
           <div class="dock-divider"></div>
 
           <button id="btn-panel-toggle" class="dock-btn dock-btn-primary" title="Toggle Inspector & Tools (I)" aria-label="Tools and Settings">
@@ -188,6 +193,18 @@
                   <span id="dim-z" class="dim-val font-mono">0.00 mm</span>
                 </div>
               </div>
+            </div>
+
+            <div class="section-block">
+              <div class="section-header-flex">
+                <h3 class="section-title">Point-to-Point Caliper</h3>
+                <button id="btn-clear-measurements" class="text-btn hidden">Clear</button>
+              </div>
+              <button id="btn-measure-panel-toggle" class="action-btn action-btn-secondary w-full">
+                <i data-lucide="ruler"></i>
+                <span id="measure-btn-text">Start Measuring</span>
+              </button>
+              <div id="measurements-list" class="measurements-list hidden"></div>
             </div>
 
             <div class="section-block">
