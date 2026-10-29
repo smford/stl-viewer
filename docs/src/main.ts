@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import {
   createIcons,
   Box,
@@ -26,7 +27,8 @@ import {
   Pipette,
   UploadCloud,
   Check,
-  Ruler
+  Ruler,
+  Sparkles
 } from 'lucide';
 import { STLViewer } from './viewer.ts';
 import { OrientationGizmo } from './orientationGizmo.ts';
@@ -65,6 +67,7 @@ function refreshIcons() {
       UploadCloud,
       Check,
       Ruler,
+      Sparkles,
     },
   });
 }
@@ -81,6 +84,7 @@ const defaultOptions: ViewerOptions = {
   showShadows: true,
   showBoundingBox: false,
   showAxes: true,
+  showCenterOfMass: false,
   autoRotate: false,
   autoRotateSpeed: 2.0,
   cameraType: 'perspective',
@@ -148,6 +152,13 @@ const dimY = document.getElementById('dim-y') as HTMLElement;
 const dimZ = document.getElementById('dim-z') as HTMLElement;
 const statFilesize = document.getElementById('stat-filesize') as HTMLElement;
 const statIntegrity = document.getElementById('stat-integrity') as HTMLElement;
+const statCom = document.getElementById('stat-com') as HTMLElement;
+
+// Alignment Buttons
+const btnAutoOrient = document.getElementById('btn-auto-orient') as HTMLButtonElement;
+const btnRotX = document.getElementById('btn-rot-x') as HTMLButtonElement;
+const btnRotY = document.getElementById('btn-rot-y') as HTMLButtonElement;
+const btnRotZ = document.getElementById('btn-rot-z') as HTMLButtonElement;
 
 // Filament Estimator Elements
 const calcMaterial = document.getElementById('calc-material') as HTMLSelectElement;
@@ -188,6 +199,7 @@ const printerFitBadge = document.getElementById('printer-fit-badge') as HTMLElem
 const toggleGrid = document.getElementById('toggle-grid') as HTMLInputElement;
 const toggleShadows = document.getElementById('toggle-shadows') as HTMLInputElement;
 const toggleBbox = document.getElementById('toggle-bbox') as HTMLInputElement;
+const toggleCom = document.getElementById('toggle-com') as HTMLInputElement;
 const autorotateSpeed = document.getElementById('autorotate-speed') as HTMLInputElement;
 const speedVal = document.getElementById('speed-val') as HTMLElement;
 
@@ -285,6 +297,9 @@ function updateStatsUI(loaded: LoadedModel) {
 
   statIntegrity.textContent = stats.isWatertight ? 'Watertight (Solid)' : 'Surface Mesh';
   statIntegrity.className = stats.isWatertight ? 'info-val badge-ok' : 'info-val';
+
+  statCom.textContent = `${stats.centerOfMass.x}, ${stats.centerOfMass.y}, ${stats.centerOfMass.z}`;
+  viewer.updateCenterOfMassMarker(stats.centerOfMass);
 
   activeModelNameEl.textContent = stats.name;
   activeModelNameEl.title = stats.name;
@@ -697,6 +712,37 @@ function setupEventHandlers() {
   });
   toggleBbox.addEventListener('change', () => {
     viewer.setOptions({ showBoundingBox: toggleBbox.checked });
+  });
+  toggleCom.addEventListener('change', () => {
+    viewer.setOptions({ showCenterOfMass: toggleCom.checked });
+    if (toggleCom.checked) {
+      const box = viewer.getBoundingBox();
+      if (box) {
+        const center = new THREE.Vector3();
+        box.getCenter(center);
+        viewer.updateCenterOfMassMarker({ x: center.x, y: center.y, z: center.z });
+      }
+    } else {
+      viewer.updateCenterOfMassMarker(undefined);
+    }
+  });
+
+  // Alignment Handlers
+  btnAutoOrient.addEventListener('click', () => {
+    viewer.autoOrientModel();
+    showToast('Auto-oriented model for optimal bed stability');
+  });
+  btnRotX.addEventListener('click', () => {
+    viewer.rotateModel('x', 90);
+    showToast('Rotated +90° around X axis');
+  });
+  btnRotY.addEventListener('click', () => {
+    viewer.rotateModel('y', 90);
+    showToast('Rotated +90° around Y axis');
+  });
+  btnRotZ.addEventListener('click', () => {
+    viewer.rotateModel('z', 90);
+    showToast('Rotated +90° around Z axis');
   });
 
   // Auto-rotate Speed Slider

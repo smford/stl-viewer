@@ -22,6 +22,7 @@ export interface ModelStats {
   volume: number;       // in mm³
   surfaceArea: number;  // in mm²
   isWatertight: boolean;
+  centerOfMass: { x: number; y: number; z: number };
 }
 
 export interface ViewerOptions {
@@ -35,6 +36,7 @@ export interface ViewerOptions {
   showShadows: boolean;
   showBoundingBox: boolean;
   showAxes: boolean;
+  showCenterOfMass: boolean;
   autoRotate: boolean;
   autoRotateSpeed: number;
   cameraType: 'perspective' | 'orthographic';

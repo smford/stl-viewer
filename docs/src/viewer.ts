@@ -22,6 +22,7 @@ export class STLViewer {
   private currentMesh: THREE.Mesh | null = null;
   private wireframeMesh: THREE.Mesh | null = null;
   private boundingBoxHelper: THREE.Box3Helper | null = null;
+  private comMarker: THREE.Group | null = null;
   private gridHelper: THREE.GridHelper | null = null;
   private groundPlane: THREE.Mesh | null = null;
 
@@ -524,6 +525,11 @@ export class STLViewer {
       this.boundingBoxHelper.visible = newOptions.showBoundingBox;
     }
 
+    if (newOptions.showCenterOfMass !== undefined && !newOptions.showCenterOfMass && this.comMarker) {
+      this.scene.remove(this.comMarker);
+      this.comMarker = null;
+    }
+
     if (newOptions.autoRotate !== undefined) {
       this.controls.autoRotate = newOptions.autoRotate;
     }
@@ -543,6 +549,128 @@ export class STLViewer {
 
   public getOptions(): ViewerOptions {
     return { ...this.options };
+  }
+
+  public updateCenterOfMassMarker(comCoords?: { x: number; y: number; z: number }) {
+    if (this.comMarker) {
+      this.scene.remove(this.comMarker);
+      this.comMarker = null;
+    }
+
+    if (!this.options.showCenterOfMass || !comCoords) return;
+
+    this.comMarker = new THREE.Group();
+    this.comMarker.name = 'com-marker';
+
+    const r = 2.0;
+    // Central sphere
+    const sphereMat = new THREE.MeshBasicMaterial({ color: 0xfacc15, depthTest: false });
+    const sphere = new THREE.Mesh(new THREE.SphereGeometry(r * 0.5, 16, 16), sphereMat);
+    sphere.renderOrder = 999;
+    this.comMarker.add(sphere);
+
+    // Gimbal crosshair rings
+    const ringMat = new THREE.LineBasicMaterial({ color: 0xfacc15, depthTest: false, linewidth: 2 });
+    const ringGeo = new THREE.BufferGeometry();
+    const pts: THREE.Vector3[] = [];
+    for (let i = 0; i <= 32; i++) {
+      const theta = (i / 32) * Math.PI * 2;
+      pts.push(new THREE.Vector3(Math.cos(theta) * r, Math.sin(theta) * r, 0));
+    }
+    ringGeo.setFromPoints(pts);
+
+    const ringZ = new THREE.Line(ringGeo, ringMat);
+    ringZ.renderOrder = 999;
+    const ringX = new THREE.Line(ringGeo.clone().rotateY(Math.PI / 2), ringMat);
+    ringX.renderOrder = 999;
+    const ringY = new THREE.Line(ringGeo.clone().rotateX(Math.PI / 2), ringMat);
+    ringY.renderOrder = 999;
+
+    this.comMarker.add(ringZ, ringX, ringY);
+    this.comMarker.position.set(comCoords.x, comCoords.y, comCoords.z);
+    this.scene.add(this.comMarker);
+  }
+
+  public rotateModel(axis: 'x' | 'y' | 'z', degrees: number) {
+    if (!this.currentMesh) return;
+    const rad = (degrees * Math.PI) / 180;
+    const geom = this.currentMesh.geometry;
+
+    if (axis === 'x') geom.rotateX(rad);
+    else if (axis === 'y') geom.rotateY(rad);
+    else if (axis === 'z') geom.rotateZ(rad);
+
+    geom.computeVertexNormals();
+    this.regroundGeometry(geom);
+  }
+
+  public autoOrientModel() {
+    if (!this.currentMesh) return;
+    const geom = this.currentMesh.geometry;
+
+    // Test 6 canonical rotations to minimize bounding height (fastest print) and maximize base footprint
+    const candidateRotations = [
+      { x: 0, z: 0 },
+      { x: Math.PI / 2, z: 0 },
+      { x: -Math.PI / 2, z: 0 },
+      { x: Math.PI, z: 0 },
+      { x: 0, z: Math.PI / 2 },
+      { x: 0, z: -Math.PI / 2 },
+    ];
+
+    let bestScore = Infinity;
+    let bestRot = candidateRotations[0];
+
+    for (const rot of candidateRotations) {
+      const testGeom = geom.clone();
+      if (rot.x !== 0) testGeom.rotateX(rot.x);
+      if (rot.z !== 0) testGeom.rotateZ(rot.z);
+      testGeom.computeBoundingBox();
+      const sz = new THREE.Vector3();
+      testGeom.boundingBox!.getSize(sz);
+
+      // Score: heavily penalize height (Y) to encourage flat stable prints
+      const score = sz.y * 2.0 - (sz.x * sz.z) * 0.01;
+      if (score < bestScore) {
+        bestScore = score;
+        bestRot = rot;
+      }
+      testGeom.dispose();
+    }
+
+    if (bestRot.x !== 0) geom.rotateX(bestRot.x);
+    if (bestRot.z !== 0) geom.rotateZ(bestRot.z);
+    geom.computeVertexNormals();
+    this.regroundGeometry(geom);
+  }
+
+  private regroundGeometry(geom: THREE.BufferGeometry) {
+    geom.center();
+    geom.computeBoundingBox();
+    const yOffset = -geom.boundingBox!.min.y;
+    geom.translate(0, yOffset, 0);
+
+    geom.computeBoundingSphere();
+    geom.computeBoundingBox();
+    this.modelBoundingBox = geom.boundingBox!.clone();
+    this.modelBoundingSphere = geom.boundingSphere!.clone();
+
+    if (this.wireframeMesh) {
+      this.wireframeMesh.geometry = geom;
+    }
+
+    if (this.boundingBoxHelper) {
+      this.scene.remove(this.boundingBoxHelper);
+      this.boundingBoxHelper.dispose();
+      this.boundingBoxHelper = new THREE.Box3Helper(this.modelBoundingBox, new THREE.Color(0x38bdf8));
+      this.boundingBoxHelper.visible = this.options.showBoundingBox;
+      this.scene.add(this.boundingBoxHelper);
+    }
+
+    this.adaptEnvironmentToModel();
+    this.updateClipping();
+    this.buildPlate.checkFit(this.modelBoundingBox);
+    this.onCameraChange?.();
   }
 
   public getBoundingBox(): THREE.Box3 | null {

@@ -261,6 +261,20 @@
                 <span class="info-key">Mesh Integrity</span>
                 <span id="stat-integrity" class="info-val badge-ok">Watertight</span>
               </div>
+              <div class="info-row">
+                <span class="info-key">Center of Mass</span>
+                <span id="stat-com" class="info-val font-mono">0.0, 0.0, 0.0</span>
+              </div>
+            </div>
+
+            <div class="section-block">
+              <h3 class="section-title">Model Alignment</h3>
+              <div class="shading-pill-group mb-2">
+                <button id="btn-auto-orient" class="pill-btn"><i data-lucide="sparkles"></i> Auto-Orient</button>
+                <button id="btn-rot-x" class="pill-btn">+90° X</button>
+                <button id="btn-rot-y" class="pill-btn">+90° Y</button>
+                <button id="btn-rot-z" class="pill-btn">+90° Z</button>
+              </div>
             </div>
           </section>
 
@@ -420,6 +434,10 @@
               <div class="toggle-row">
                 <label for="toggle-bbox" class="toggle-label">Bounding Box Outline</label>
                 <input type="checkbox" id="toggle-bbox" class="glass-switch" />
+              </div>
+              <div class="toggle-row">
+                <label for="toggle-com" class="toggle-label">Center of Mass (CoM)</label>
+                <input type="checkbox" id="toggle-com" class="glass-switch" />
               </div>
             </div>
 

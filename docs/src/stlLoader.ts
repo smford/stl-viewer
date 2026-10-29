@@ -15,15 +15,6 @@ export function parseSTL(buffer: ArrayBuffer, fileName: string = 'model.stl'): L
   // Ensure normals are computed
   geometry.computeVertexNormals();
 
-  // Compute original bounding box
-  geometry.computeBoundingBox();
-  const originalBox = geometry.boundingBox!;
-  const size = new THREE.Vector3();
-  originalBox.getSize(size);
-
-  // Compute stats BEFORE translating (so coordinates are exact relative to STL spec)
-  const stats = calculateGeometryStats(geometry, fileName, buffer.byteLength);
-
   // Center horizontally (X, Z) and rest on Y=0 ground plane
   geometry.center();
   geometry.computeBoundingBox();
@@ -31,9 +22,12 @@ export function parseSTL(buffer: ArrayBuffer, fileName: string = 'model.stl'): L
   const yOffset = -centeredBox.min.y;
   geometry.translate(0, yOffset, 0);
 
-  // Recompute bounding sphere for camera framing
+  // Recompute bounding sphere and box for camera framing
   geometry.computeBoundingSphere();
   geometry.computeBoundingBox();
+
+  // Compute stats on the properly grounded geometry
+  const stats = calculateGeometryStats(geometry, fileName, buffer.byteLength);
 
   return { geometry, stats };
 }
@@ -58,6 +52,8 @@ function calculateGeometryStats(
 
   let totalVolume = 0;
   let totalArea = 0;
+  const comSum = new THREE.Vector3();
+  const triCentroid = new THREE.Vector3();
 
   const pA = new THREE.Vector3();
   const pB = new THREE.Vector3();
@@ -75,7 +71,12 @@ function calculateGeometryStats(
     // Signed volume of tetrahedron formed by origin and triangle
     // V = (pA . (pB x pC)) / 6
     cross.crossVectors(pB, pC);
-    totalVolume += pA.dot(cross) / 6.0;
+    const tetVol = pA.dot(cross) / 6.0;
+    totalVolume += tetVol;
+
+    // Tetrahedron centroid: (pA + pB + pC + 0) / 4
+    triCentroid.copy(pA).add(pB).add(pC).multiplyScalar(0.25);
+    comSum.addScaledVector(triCentroid, tetVol);
 
     // Surface area of triangle: 0.5 * |(pB - pA) x (pC - pA)|
     ab.subVectors(pB, pA);
@@ -86,6 +87,14 @@ function calculateGeometryStats(
 
   // Volume sign depends on vertex winding. Take absolute value.
   const volume = Math.abs(totalVolume);
+
+  // Center of Mass (CoM)
+  const centerOfMass = new THREE.Vector3();
+  if (Math.abs(totalVolume) > 0.001) {
+    centerOfMass.copy(comSum).divideScalar(totalVolume);
+  } else {
+    box.getCenter(centerOfMass);
+  }
 
   return {
     name: fileName,
@@ -100,5 +109,10 @@ function calculateGeometryStats(
     volume: Number(volume.toFixed(2)),
     surfaceArea: Number(totalArea.toFixed(2)),
     isWatertight: volume > 0.001,
+    centerOfMass: {
+      x: Number(centerOfMass.x.toFixed(2)),
+      y: Number(centerOfMass.y.toFixed(2)),
+      z: Number(centerOfMass.z.toFixed(2)),
+    },
   };
 }
