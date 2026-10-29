@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>3D STL Viewer & Studio</title>
+    <meta name="description" content="Clean, sleek, modern 3D STL viewer for desktop, tablet, and mobile devices." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body>
+    <div id="app" class="app-root">
+      <!-- 3D Viewport Canvas Container -->
+      <main id="viewport-container" class="viewport-container" aria-label="3D Model Viewport">
+        <!-- Interactive Orientation Gizmo (Corner ViewCube) -->
+        <div id="gizmo-container" class="gizmo-container" title="Click axes to change view"></div>
+
+        <!-- Floating Quick View Pill Overlay (Bottom/Center on mobile, Bottom/Left on desktop) -->
+        <nav class="quick-dock" aria-label="Quick 3D Controls">
+          <button id="btn-fit" class="dock-btn" title="Fit to View (F)" aria-label="Fit to View">
+            <i data-lucide="focus"></i>
+            <span class="dock-label">Fit</span>
+          </button>
+          
+          <div class="dock-dropdown-wrapper">
+            <button id="btn-views-menu" class="dock-btn" title="Standard Camera Views" aria-label="Camera Views">
+              <i data-lucide="box"></i>
+              <span class="dock-label">Views</span>
+            </button>
+            <div id="views-dropdown" class="dock-menu glass-panel hidden">
+              <button data-view="iso" class="menu-item"><i data-lucide="compass"></i> Isometric</button>
+              <button data-view="top" class="menu-item"><i data-lucide="arrow-up"></i> Top (Y+)</button>
+              <button data-view="front" class="menu-item"><i data-lucide="square"></i> Front (Z+)</button>
+              <button data-view="right" class="menu-item"><i data-lucide="arrow-right"></i> Right (X+)</button>
+              <button data-view="bottom" class="menu-item"><i data-lucide="arrow-down"></i> Bottom (Y-)</button>
+              <button data-view="left" class="menu-item"><i data-lucide="arrow-left"></i> Left (X-)</button>
+              <button data-view="back" class="menu-item"><i data-lucide="move"></i> Back (Z-)</button>
+            </div>
+          </div>
+
+          <button id="btn-autorotate" class="dock-btn" title="Toggle Turntable Rotation (R)" aria-label="Turntable Rotation">
+            <i data-lucide="rotate-cw"></i>
+            <span class="dock-label">Rotate</span>
+          </button>
+
+          <button id="btn-cam-toggle" class="dock-btn" title="Toggle Perspective / Orthographic View (P)" aria-label="Camera Projection">
+            <i data-lucide="video"></i>
+            <span class="dock-label" id="cam-type-label">Persp</span>
+          </button>
+
+          <button id="btn-wireframe-toggle" class="dock-btn" title="Toggle Wireframe Overlay (W)" aria-label="Wireframe">
+            <i data-lucide="grid-3x3"></i>
+            <span class="dock-label">Wire</span>
+          </button>
+
+          <div class="dock-divider"></div>
+
+          <button id="btn-panel-toggle" class="dock-btn dock-btn-primary" title="Toggle Inspector & Tools (I)" aria-label="Tools and Settings">
+            <i data-lucide="sliders-horizontal"></i>
+            <span class="dock-label">Tools</span>
+          </button>
+        </nav>
+      </main>
+
+      <!-- Glassmorphic Top Navigation Header -->
+      <header class="top-nav glass-panel">
+        <div class="nav-left">
+          <div class="brand">
+            <div class="brand-icon">
+              <i data-lucide="box"></i>
+            </div>
+            <div class="brand-text">
+              <span class="brand-title">STL<span class="brand-accent">Studio</span></span>
+              <span class="brand-badge">3D CAD</span>
+            </div>
+          </div>
+          <div class="model-badge-container">
+            <span id="active-model-name" class="model-name-pill" title="Current Model">Mechanical Spur Gear</span>
+          </div>
+        </div>
+
+        <div class="nav-right">
+          <!-- Sample Models Picker -->
+          <div class="sample-select-wrapper">
+            <label for="sample-select" class="sr-only">Sample Model</label>
+            <select id="sample-select" class="glass-select" aria-label="Load Sample Model">
+              <option value="" disabled>Load Sample...</option>
+              <option value="gear" selected>Mechanical Spur Gear</option>
+              <option value="torus">Torus Knot (2,3)</option>
+              <option value="cube">20mm Calibration Cube</option>
+              <option value="crystal">Faceted Gem</option>
+            </select>
+          </div>
+
+          <!-- File Upload Button -->
+          <label for="file-input" class="action-btn action-btn-primary" title="Open STL File (Drag & Drop anywhere)">
+            <i data-lucide="upload"></i>
+            <span class="btn-text">Open STL</span>
+            <input type="file" id="file-input" accept=".stl" class="sr-only" />
+          </label>
+
+          <!-- Download Active STL -->
+          <button id="btn-download-stl" class="icon-btn" title="Download current STL" aria-label="Download STL">
+            <i data-lucide="download"></i>
+          </button>
+
+          <!-- Snapshot Screenshot -->
+          <button id="btn-snapshot" class="icon-btn" title="Take Screenshot (S)" aria-label="Take Screenshot">
+            <i data-lucide="camera"></i>
+          </button>
+
+          <!-- Fullscreen -->
+          <button id="btn-fullscreen" class="icon-btn" title="Toggle Fullscreen" aria-label="Toggle Fullscreen">
+            <i data-lucide="maximize"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Floating Side Inspector / Bottom Sheet on Mobile -->
+      <aside id="inspector-panel" class="inspector-panel glass-panel" aria-label="Model Inspector and Settings">
+        <div class="panel-header">
+          <div class="panel-title-group">
+            <i data-lucide="sliders"></i>
+            <h2 class="panel-title">Inspector & Settings</h2>
+          </div>
+          <button id="btn-close-panel" class="icon-btn panel-close-btn" aria-label="Close Inspector">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+
+        <!-- Inspector Navigation Tabs -->
+        <nav class="inspector-tabs" role="tablist">
+          <button class="tab-btn active" data-tab="tab-stats" role="tab" aria-selected="true">
+            <i data-lucide="info"></i>
+            <span>Metrics</span>
+          </button>
+          <button class="tab-btn" data-tab="tab-material" role="tab" aria-selected="false">
+            <i data-lucide="palette"></i>
+            <span>Style</span>
+          </button>
+          <button class="tab-btn" data-tab="tab-section" role="tab" aria-selected="false">
+            <i data-lucide="scissors"></i>
+            <span>Slice</span>
+          </button>
+          <button class="tab-btn" data-tab="tab-scene" role="tab" aria-selected="false">
+            <i data-lucide="sun"></i>
+            <span>Studio</span>
+          </button>
+        </nav>
+
+        <div class="panel-content scrollable">
+          <!-- TAB 1: MODEL STATS -->
+          <section id="tab-stats" class="tab-pane active" role="tabpanel">
+            <div class="stats-grid">
+              <div class="stat-card">
+                <span class="stat-label">Triangles</span>
+                <span id="stat-triangles" class="stat-value font-mono">0</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Vertices</span>
+                <span id="stat-vertices" class="stat-value font-mono">0</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Volume</span>
+                <span id="stat-volume" class="stat-value font-mono">0 cm³</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Surface Area</span>
+                <span id="stat-area" class="stat-value font-mono">0 cm²</span>
+              </div>
+            </div>
+
+            <div class="section-block">
+              <h3 class="section-title">Bounding Dimensions</h3>
+              <div class="dimensions-card">
+                <div class="dim-row">
+                  <span class="dim-axis axis-x">X (Width)</span>
+                  <span id="dim-x" class="dim-val font-mono">0.00 mm</span>
+                </div>
+                <div class="dim-row">
+                  <span class="dim-axis axis-y">Y (Height)</span>
+                  <span id="dim-y" class="dim-val font-mono">0.00 mm</span>
+                </div>
+                <div class="dim-row">
+                  <span class="dim-axis axis-z">Z (Depth)</span>
+                  <span id="dim-z" class="dim-val font-mono">0.00 mm</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="section-block">
+              <h3 class="section-title">File Details</h3>
+              <div class="info-row">
+                <span class="info-key">File Size</span>
+                <span id="stat-filesize" class="info-val font-mono">0 KB</span>
+              </div>
+              <div class="info-row">
+                <span class="info-key">Mesh Integrity</span>
+                <span id="stat-integrity" class="info-val badge-ok">Watertight</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- TAB 2: APPEARANCE & MATERIAL -->
+          <section id="tab-material" class="tab-pane hidden" role="tabpanel">
+            <div class="section-block">
+              <h3 class="section-title">Shading Mode</h3>
+              <div class="shading-pill-group">
+                <button class="pill-btn active" data-shading="standard">Studio</button>
+                <button class="pill-btn" data-shading="clay">Matte Clay</button>
+                <button class="pill-btn" data-shading="glossy">Gloss Resin</button>
+                <button class="pill-btn" data-shading="metal">Metal</button>
+                <button class="pill-btn" data-shading="flat">Faceted</button>
+                <button class="pill-btn" data-shading="xray">X-Ray</button>
+                <button class="pill-btn" data-shading="normals">Normals</button>
+                <button class="pill-btn" data-shading="wireframe">Wireframe</button>
+              </div>
+            </div>
+
+            <div class="section-block">
+              <h3 class="section-title">Material Color</h3>
+              <div class="color-palette">
+                <button class="color-swatch active" style="--swatch-color: #3b82f6" data-color="#3b82f6" title="Cobalt Blue"></button>
+                <button class="color-swatch" style="--swatch-color: #f97316" data-color="#f97316" title="Prusa Orange"></button>
+                <button class="color-swatch" style="--swatch-color: #06b6d4" data-color="#06b6d4" title="Cyan CAD"></button>
+                <button class="color-swatch" style="--swatch-color: #10b981" data-color="#10b981" title="Emerald"></button>
+                <button class="color-swatch" style="--swatch-color: #e2e8f0" data-color="#e2e8f0" title="Ceramic White"></button>
+                <button class="color-swatch" style="--swatch-color: #64748b" data-color="#64748b" title="Titanium Slate"></button>
+                <button class="color-swatch" style="--swatch-color: #eab308" data-color="#eab308" title="Brass Gold"></button>
+                <button class="color-swatch" style="--swatch-color: #ef4444" data-color="#ef4444" title="Crimson"></button>
+                <div class="custom-color-picker-wrapper">
+                  <input type="color" id="custom-color-input" value="#3b82f6" title="Custom Color Picker" />
+                  <i data-lucide="pipette" class="picker-icon"></i>
+                </div>
+              </div>
+            </div>
+
+            <div class="section-block">
+              <div class="slider-control">
+                <div class="slider-header">
+                  <label for="roughness-slider">Roughness</label>
+                  <span id="roughness-val" class="slider-val">0.35</span>
+                </div>
+                <input type="range" id="roughness-slider" min="0" max="1" step="0.05" value="0.35" />
+              </div>
+
+              <div class="slider-control">
+                <div class="slider-header">
+                  <label for="metalness-slider">Metalness</label>
+                  <span id="metalness-val" class="slider-val">0.10</span>
+                </div>
+                <input type="range" id="metalness-slider" min="0" max="1" step="0.05" value="0.10" />
+              </div>
+            </div>
+
+            <div class="section-block">
+              <div class="toggle-row">
+                <label for="toggle-wireframe-overlay" class="toggle-label">Wireframe Overlay</label>
+                <input type="checkbox" id="toggle-wireframe-overlay" class="glass-switch" />
+              </div>
+            </div>
+          </section>
+
+          <!-- TAB 3: SECTION CUTTING / SLICING -->
+          <section id="tab-section" class="tab-pane hidden" role="tabpanel">
+            <div class="section-block">
+              <div class="toggle-row">
+                <label for="toggle-clipping" class="toggle-label">Enable Section Cut</label>
+                <input type="checkbox" id="toggle-clipping" class="glass-switch" />
+              </div>
+            </div>
+
+            <div id="clipping-controls" class="section-block disabled">
+              <div class="pill-group-label">Cut Axis</div>
+              <div class="shading-pill-group">
+                <button class="pill-btn" data-clip-axis="x">X Axis</button>
+                <button class="pill-btn active" data-clip-axis="y">Y Axis</button>
+                <button class="pill-btn" data-clip-axis="z">Z Axis</button>
+              </div>
+
+              <div class="slider-control">
+                <div class="slider-header">
+                  <label for="slice-pos-slider">Slice Position</label>
+                  <span id="slice-pos-val" class="slider-val">50%</span>
+                </div>
+                <input type="range" id="slice-pos-slider" min="0" max="100" step="1" value="50" />
+              </div>
+
+              <div class="toggle-row">
+                <label for="toggle-clip-invert" class="toggle-label">Invert Cut Direction</label>
+                <input type="checkbox" id="toggle-clip-invert" class="glass-switch" />
+              </div>
+            </div>
+          </section>
+
+          <!-- TAB 4: STUDIO & ENVIRONMENT -->
+          <section id="tab-scene" class="tab-pane hidden" role="tabpanel">
+            <div class="section-block">
+              <h3 class="section-title">Lighting Setup</h3>
+              <div class="shading-pill-group">
+                <button class="pill-btn active" data-light="studio">Studio</button>
+                <button class="pill-btn" data-light="daylight">Daylight</button>
+                <button class="pill-btn" data-light="cyber">Cyberpunk</button>
+                <button class="pill-btn" data-light="warm">Warm Sunset</button>
+              </div>
+            </div>
+
+            <div class="section-block">
+              <h3 class="section-title">Display Elements</h3>
+              <div class="toggle-row">
+                <label for="toggle-grid" class="toggle-label">Ground Grid</label>
+                <input type="checkbox" id="toggle-grid" class="glass-switch" checked />
+              </div>
+              <div class="toggle-row">
+                <label for="toggle-shadows" class="toggle-label">Floor Shadows</label>
+                <input type="checkbox" id="toggle-shadows" class="glass-switch" checked />
+              </div>
+              <div class="toggle-row">
+                <label for="toggle-bbox" class="toggle-label">Bounding Box Outline</label>
+                <input type="checkbox" id="toggle-bbox" class="glass-switch" />
+              </div>
+            </div>
+
+            <div class="section-block">
+              <div class="slider-control">
+                <div class="slider-header">
+                  <label for="autorotate-speed">Auto-Rotate Speed</label>
+                  <span id="speed-val" class="slider-val">2.0x</span>
+                </div>
+                <input type="range" id="autorotate-speed" min="0.5" max="8" step="0.5" value="2.0" />
+              </div>
+            </div>
+          </section>
+        </div>
+      </aside>
+
+      <!-- Drag & Drop Fullscreen Dropzone Overlay -->
+      <div id="drop-overlay" class="drop-overlay hidden">
+        <div class="drop-card glass-panel">
+          <i data-lucide="upload-cloud" class="drop-icon"></i>
+          <h3>Drop STL File Here</h3>
+          <p>Binary and ASCII .stl formats supported</p>
+        </div>
+      </div>
+
+      <!-- Loading / Processing Spinner -->
+      <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="spinner-card glass-panel">
+          <div class="spinner"></div>
+          <span id="loading-text" class="loading-text">Parsing 3D Geometry...</span>
+        </div>
+      </div>
+
+      <!-- Toast Notification Container -->
+      <div id="toast-container" class="toast-container" aria-live="polite"></div>
+    </div>
+
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

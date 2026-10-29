@@ -1,0 +1,26 @@
+{
+  "name": "stl-viewer",
+  "version": "1.0.0",
+  "description": "Modern, clean, responsive 3D STL viewer for desktop, tablet, and mobile",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/smford/stl-viewer.git"
+  },
+  "keywords": ["stl", "3d", "threejs", "webgl", "cad", "viewer"],
+  "license": "MIT",
+  "dependencies": {
+    "lucide": "^1.16.0",
+    "three": "^0.180.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.180.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.12"
+  }
+}
