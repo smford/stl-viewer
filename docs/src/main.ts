@@ -85,6 +85,7 @@ const defaultOptions: ViewerOptions = {
   autoRotateSpeed: 2.0,
   cameraType: 'perspective',
   lightingPreset: 'studio',
+  overhangThreshold: 45,
   sectionClipping: {
     enabled: false,
     axis: 'y',
@@ -149,6 +150,10 @@ const statIntegrity = document.getElementById('stat-integrity') as HTMLElement;
 
 // Appearance Controls
 const shadingButtons = document.querySelectorAll<HTMLButtonElement>('[data-shading]');
+const overhangPanel = document.getElementById('overhang-panel') as HTMLElement;
+const overhangSlider = document.getElementById('overhang-slider') as HTMLInputElement;
+const overhangVal = document.getElementById('overhang-val') as HTMLElement;
+const statOverhangRatio = document.getElementById('stat-overhang-ratio') as HTMLElement;
 const colorSwatches = document.querySelectorAll<HTMLButtonElement>('[data-color]');
 const customColorInput = document.getElementById('custom-color-input') as HTMLInputElement;
 const roughnessSlider = document.getElementById('roughness-slider') as HTMLInputElement;
@@ -221,6 +226,14 @@ function updateStatsUI(loaded: LoadedModel) {
 
   // Recalculate clipping slider values based on model bounding box
   syncClippingPlane();
+
+  if (viewer.getOptions().shadingMode === 'overhang') {
+    const analysis = viewer.getOverhangAnalysis();
+    if (analysis) {
+      const areaCm2 = (analysis.overhangArea / 100).toFixed(1);
+      statOverhangRatio.textContent = `${analysis.overhangRatio}% (${areaCm2} cm²)`;
+    }
+  }
 }
 
 /**
@@ -475,7 +488,30 @@ function setupEventHandlers() {
       btn.classList.add('active');
       const mode = btn.getAttribute('data-shading') as ShadingMode;
       viewer.setOptions({ shadingMode: mode });
+
+      if (mode === 'overhang') {
+        overhangPanel.classList.remove('hidden');
+        updateOverhangDisplay();
+      } else {
+        overhangPanel.classList.add('hidden');
+      }
     });
+  });
+
+  // Overhang Threshold Slider
+  function updateOverhangDisplay() {
+    const analysis = viewer.getOverhangAnalysis();
+    if (analysis) {
+      const areaCm2 = (analysis.overhangArea / 100).toFixed(1);
+      statOverhangRatio.textContent = `${analysis.overhangRatio}% (${areaCm2} cm²)`;
+    }
+  }
+
+  overhangSlider.addEventListener('input', () => {
+    const val = parseInt(overhangSlider.value, 10);
+    overhangVal.textContent = `${val}°`;
+    viewer.setOptions({ overhangThreshold: val });
+    updateOverhangDisplay();
   });
 
   // Color Swatches

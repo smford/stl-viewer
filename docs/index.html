@@ -233,6 +233,27 @@
                 <button class="pill-btn" data-shading="xray">X-Ray</button>
                 <button class="pill-btn" data-shading="normals">Normals</button>
                 <button class="pill-btn" data-shading="wireframe">Wireframe</button>
+                <button class="pill-btn" data-shading="overhang">Print Overhang</button>
+              </div>
+            </div>
+
+            <div id="overhang-panel" class="section-block hidden">
+              <h3 class="section-title">3D Print Overhang Analysis</h3>
+              <div class="slider-control">
+                <div class="slider-header">
+                  <label for="overhang-slider">Support Threshold</label>
+                  <span id="overhang-val" class="slider-val">45°</span>
+                </div>
+                <input type="range" id="overhang-slider" min="30" max="65" step="1" value="45" />
+              </div>
+              <div class="overhang-legend">
+                <div class="legend-item"><span class="legend-dot dot-critical"></span> Requires Support (&lt;45°)</div>
+                <div class="legend-item"><span class="legend-dot dot-warning"></span> Near-threshold (45°-55°)</div>
+                <div class="legend-item"><span class="legend-dot dot-safe"></span> Self-supporting (&gt;55°)</div>
+              </div>
+              <div class="info-row">
+                <span class="info-key">Support Area</span>
+                <span id="stat-overhang-ratio" class="info-val font-mono">0.0% (0.0 cm²)</span>
               </div>
             </div>
 

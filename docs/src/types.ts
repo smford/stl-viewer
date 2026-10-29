@@ -6,7 +6,8 @@ export type ShadingMode =
   | 'flat' 
   | 'xray' 
   | 'normals' 
-  | 'wireframe';
+  | 'wireframe'
+  | 'overhang';
 
 export type LightingPreset = 'studio' | 'daylight' | 'cyber' | 'warm';
 
@@ -38,6 +39,7 @@ export interface ViewerOptions {
   autoRotateSpeed: number;
   cameraType: 'perspective' | 'orthographic';
   lightingPreset: LightingPreset;
+  overhangThreshold: number;
   sectionClipping: {
     enabled: boolean;
     axis: 'x' | 'y' | 'z';

@@ -364,6 +364,35 @@ html, body {
   color: var(--text-muted);
 }
 
+.overhang-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-glass);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.dot-critical { background: #ef4444; }
+.dot-warning { background: #f59e0b; }
+.dot-safe { background: #64748b; }
+
 .icon-btn {
   display: inline-flex;
   align-items: center;

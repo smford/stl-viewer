@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { CameraView, LightingPreset, ViewerOptions } from './types.ts';
 import { MeasurementTool } from './measurementTool.ts';
+import { computeOverhangColors, type OverhangAnalysis } from './overhangAnalyzer.ts';
 
 export class STLViewer {
   public container: HTMLElement;
@@ -37,6 +38,7 @@ export class STLViewer {
   private animationFrameId: number | null = null;
   private modelBoundingSphere: THREE.Sphere | null = null;
   private modelBoundingBox: THREE.Box3 | null = null;
+  private currentOverhangAnalysis: OverhangAnalysis | null = null;
 
   // Callback for stats / changes
   public onCameraChange?: () => void;
@@ -390,6 +392,18 @@ export class STLViewer {
           side: THREE.DoubleSide,
         });
 
+      case 'overhang':
+        if (this.currentMesh) {
+          this.applyOverhangColorsToMesh(this.currentMesh);
+        }
+        return new THREE.MeshStandardMaterial({
+          vertexColors: true,
+          roughness: 0.45,
+          metalness: 0.1,
+          clippingPlanes,
+          side: THREE.DoubleSide,
+        });
+
       case 'standard':
       default:
         return new THREE.MeshPhysicalMaterial({
@@ -402,6 +416,25 @@ export class STLViewer {
           side: THREE.DoubleSide,
         });
     }
+  }
+
+  public applyOverhangColorsToMesh(mesh: THREE.Mesh) {
+    const geometry = mesh.geometry;
+    const analysis = computeOverhangColors(geometry, this.options.overhangThreshold);
+    this.currentOverhangAnalysis = analysis;
+    geometry.setAttribute('color', new THREE.BufferAttribute(analysis.vertexColors, 3));
+    geometry.attributes.color.needsUpdate = true;
+  }
+
+  public getOverhangAnalysis(): OverhangAnalysis | null {
+    if (!this.currentMesh) return null;
+    if (!this.currentOverhangAnalysis) {
+      this.currentOverhangAnalysis = computeOverhangColors(
+        this.currentMesh.geometry,
+        this.options.overhangThreshold
+      );
+    }
+    return this.currentOverhangAnalysis;
   }
 
   public updateMaterial() {
@@ -454,12 +487,16 @@ export class STLViewer {
 
     if (
       newOptions.shadingMode !== undefined ||
+      newOptions.overhangThreshold !== undefined ||
       newOptions.materialColor !== undefined ||
       newOptions.roughness !== undefined ||
       newOptions.metalness !== undefined ||
       newOptions.wireframeOverlay !== undefined ||
       newOptions.wireframeColor !== undefined
     ) {
+      if (this.currentMesh && (this.options.shadingMode === 'overhang' || newOptions.overhangThreshold !== undefined)) {
+        this.applyOverhangColorsToMesh(this.currentMesh);
+      }
       this.updateMaterial();
     }
 
