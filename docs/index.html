@@ -277,6 +277,25 @@
             </div>
 
             <div class="section-block">
+              <h3 class="section-title">Mesh Simplification</h3>
+              <div class="slider-control">
+                <div class="slider-header">
+                  <label for="decimate-slider">Target Reduction</label>
+                  <span id="decimate-val" class="slider-val">50%</span>
+                </div>
+                <input type="range" id="decimate-slider" min="10" max="90" step="10" value="50" />
+              </div>
+              <div class="shading-pill-group">
+                <button id="btn-decimate" class="pill-btn"><i data-lucide="shrink"></i> Decimate</button>
+                <button id="btn-restore-mesh" class="pill-btn">Reset</button>
+              </div>
+              <div id="decimate-status" class="info-row mt-2 hidden">
+                <span class="info-key">Triangles</span>
+                <span id="decimate-stats-text" class="info-val font-mono">0 → 0</span>
+              </div>
+            </div>
+
+            <div class="section-block">
               <h3 class="section-title">File Details</h3>
               <div class="info-row">
                 <span class="info-key">File Size</span>

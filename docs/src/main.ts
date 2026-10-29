@@ -28,12 +28,14 @@ import {
   UploadCloud,
   Check,
   Ruler,
-  Sparkles
+  Sparkles,
+  Shrink
 } from 'lucide';
 import { STLViewer } from './viewer.ts';
 import { OrientationGizmo } from './orientationGizmo.ts';
 import { parseSTL, type LoadedModel } from './stlLoader.ts';
-import { SAMPLE_MODELS } from './sampleModels.ts';
+import { SAMPLE_MODELS, geometryToSTLBuffer } from './sampleModels.ts';
+import { decimateGeometry } from './meshDecimator.ts';
 import type { CameraView, LightingPreset, ShadingMode, ViewerOptions } from './types.ts';
 
 // Initialize Lucide icons
@@ -68,6 +70,7 @@ function refreshIcons() {
       Check,
       Ruler,
       Sparkles,
+      Shrink,
     },
   });
 }
@@ -102,6 +105,7 @@ const defaultOptions: ViewerOptions = {
 let viewer: STLViewer;
 let gizmo: OrientationGizmo;
 let currentBuffer: ArrayBuffer | null = null;
+let originalBuffer: ArrayBuffer | null = null;
 let currentFileName = 'model.stl';
 let currentModelVolumeCm3 = 0;
 
@@ -160,6 +164,14 @@ const statHoles = document.getElementById('stat-holes') as HTMLElement;
 const statNonManifold = document.getElementById('stat-non-manifold') as HTMLElement;
 const statDegenerate = document.getElementById('stat-degenerate') as HTMLElement;
 const toggleHighlightDefects = document.getElementById('toggle-highlight-defects') as HTMLInputElement;
+
+// Mesh Decimation Elements
+const decimateSlider = document.getElementById('decimate-slider') as HTMLInputElement;
+const decimateVal = document.getElementById('decimate-val') as HTMLElement;
+const btnDecimate = document.getElementById('btn-decimate') as HTMLButtonElement;
+const btnRestoreMesh = document.getElementById('btn-restore-mesh') as HTMLButtonElement;
+const decimateStatus = document.getElementById('decimate-status') as HTMLElement;
+const decimateStatsText = document.getElementById('decimate-stats-text') as HTMLElement;
 
 // Alignment Buttons
 const btnAutoOrient = document.getElementById('btn-auto-orient') as HTMLButtonElement;
@@ -366,21 +378,25 @@ function syncClippingPlane() {
 /**
  * Load STL ArrayBuffer into Viewer
  */
-function loadSTLBuffer(buffer: ArrayBuffer, name: string) {
+function loadSTLBuffer(buffer: ArrayBuffer, name: string, isDecimation = false) {
   try {
     loadingOverlay.classList.remove('hidden');
-    loadingText.textContent = `Rendering ${name}...`;
+    loadingText.textContent = isDecimation ? 'Simplifying Mesh...' : `Rendering ${name}...`;
 
     setTimeout(() => {
       currentBuffer = buffer;
       currentFileName = name;
+      if (!isDecimation) {
+        originalBuffer = buffer.slice(0);
+        decimateStatus.classList.add('hidden');
+      }
 
       const loaded = parseSTL(buffer, name);
       viewer.setModel(loaded.geometry);
       updateStatsUI(loaded);
 
       loadingOverlay.classList.add('hidden');
-      showToast(`Loaded ${name} (${loaded.stats.triangleCount.toLocaleString()} triangles)`);
+      showToast(`${isDecimation ? 'Decimated' : 'Loaded'} ${name} (${loaded.stats.triangleCount.toLocaleString()} triangles)`);
     }, 20);
   } catch (err) {
     loadingOverlay.classList.add('hidden');
@@ -729,6 +745,38 @@ function setupEventHandlers() {
   // Mesh Diagnostics Toggle
   toggleHighlightDefects.addEventListener('change', () => {
     viewer.setHighlightDefects(toggleHighlightDefects.checked);
+  });
+
+  // Decimation Listeners
+  decimateSlider.addEventListener('input', () => {
+    decimateVal.textContent = `${decimateSlider.value}%`;
+  });
+
+  btnDecimate.addEventListener('click', () => {
+    const mesh = viewer.getCurrentMesh();
+    if (!mesh) return;
+
+    const origTriangles = mesh.geometry.attributes.position.count / 3;
+    const ratio = parseFloat(decimateSlider.value) / 100;
+
+    const simplified = decimateGeometry(mesh.geometry, ratio);
+    const newTriangles = simplified.attributes.position.count / 3;
+
+    const decimatedBuffer = geometryToSTLBuffer(simplified);
+    const reductionPercent = Math.round(((origTriangles - newTriangles) / origTriangles) * 100);
+
+    decimateStatus.classList.remove('hidden');
+    decimateStatsText.textContent = `${origTriangles.toLocaleString()} → ${newTriangles.toLocaleString()} (-${reductionPercent}%)`;
+
+    loadSTLBuffer(decimatedBuffer, currentFileName, true);
+  });
+
+  btnRestoreMesh.addEventListener('click', () => {
+    if (originalBuffer) {
+      decimateStatus.classList.add('hidden');
+      loadSTLBuffer(originalBuffer, currentFileName, false);
+      showToast('Restored original full-resolution geometry');
+    }
   });
 
   // Grid / Shadow / BBox Toggles

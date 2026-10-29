@@ -709,6 +709,10 @@ export class STLViewer {
     return this.modelBoundingBox;
   }
 
+  public getCurrentMesh(): THREE.Mesh | null {
+    return this.currentMesh;
+  }
+
   public checkPrintBedFit(): FitResult {
     return this.buildPlate.checkFit(this.modelBoundingBox);
   }
