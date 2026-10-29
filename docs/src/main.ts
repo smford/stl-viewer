@@ -154,6 +154,13 @@ const statFilesize = document.getElementById('stat-filesize') as HTMLElement;
 const statIntegrity = document.getElementById('stat-integrity') as HTMLElement;
 const statCom = document.getElementById('stat-com') as HTMLElement;
 
+// Mesh Diagnostics Elements
+const statDiagBadge = document.getElementById('stat-diag-badge') as HTMLElement;
+const statHoles = document.getElementById('stat-holes') as HTMLElement;
+const statNonManifold = document.getElementById('stat-non-manifold') as HTMLElement;
+const statDegenerate = document.getElementById('stat-degenerate') as HTMLElement;
+const toggleHighlightDefects = document.getElementById('toggle-highlight-defects') as HTMLInputElement;
+
 // Alignment Buttons
 const btnAutoOrient = document.getElementById('btn-auto-orient') as HTMLButtonElement;
 const btnRotX = document.getElementById('btn-rot-x') as HTMLButtonElement;
@@ -300,6 +307,22 @@ function updateStatsUI(loaded: LoadedModel) {
 
   statCom.textContent = `${stats.centerOfMass.x}, ${stats.centerOfMass.y}, ${stats.centerOfMass.z}`;
   viewer.updateCenterOfMassMarker(stats.centerOfMass);
+
+  // Mesh Topology Diagnostics
+  const diag = viewer.getDiagnosticReport();
+  if (diag) {
+    statHoles.textContent = `${diag.boundaryEdgesCount} edges`;
+    statNonManifold.textContent = `${diag.nonManifoldEdgesCount} edges`;
+    statDegenerate.textContent = `${diag.degenerateTrianglesCount} faces`;
+    if (diag.isWatertight) {
+      statDiagBadge.textContent = 'Watertight';
+      statDiagBadge.className = 'badge-ok';
+    } else {
+      statDiagBadge.textContent = 'Issues Found';
+      statDiagBadge.className = 'badge-danger';
+    }
+    viewer.setHighlightDefects(toggleHighlightDefects.checked);
+  }
 
   activeModelNameEl.textContent = stats.name;
   activeModelNameEl.title = stats.name;
@@ -702,6 +725,11 @@ function setupEventHandlers() {
     updateFilamentEstimator();
   });
   calcSpoolPrice.addEventListener('input', updateFilamentEstimator);
+
+  // Mesh Diagnostics Toggle
+  toggleHighlightDefects.addEventListener('change', () => {
+    viewer.setHighlightDefects(toggleHighlightDefects.checked);
+  });
 
   // Grid / Shadow / BBox Toggles
   toggleGrid.addEventListener('change', () => {

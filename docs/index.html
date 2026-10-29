@@ -252,6 +252,31 @@
             </div>
 
             <div class="section-block">
+              <div class="section-header-flex">
+                <h3 class="section-title">Mesh Quality Diagnostics</h3>
+                <span id="stat-diag-badge" class="badge-ok">Watertight</span>
+              </div>
+              <div class="dimensions-card">
+                <div class="dim-row">
+                  <span class="info-key">Boundary Holes</span>
+                  <span id="stat-holes" class="dim-val font-mono">0 edges</span>
+                </div>
+                <div class="dim-row">
+                  <span class="info-key">Non-Manifold Edges</span>
+                  <span id="stat-non-manifold" class="dim-val font-mono">0 edges</span>
+                </div>
+                <div class="dim-row">
+                  <span class="info-key">Degenerate Faces</span>
+                  <span id="stat-degenerate" class="dim-val font-mono">0 faces</span>
+                </div>
+              </div>
+              <div class="toggle-row mt-2">
+                <label for="toggle-highlight-defects" class="toggle-label">Highlight Defect Edges</label>
+                <input type="checkbox" id="toggle-highlight-defects" class="glass-switch" />
+              </div>
+            </div>
+
+            <div class="section-block">
               <h3 class="section-title">File Details</h3>
               <div class="info-row">
                 <span class="info-key">File Size</span>

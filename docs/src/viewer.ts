@@ -4,6 +4,7 @@ import type { CameraView, LightingPreset, ViewerOptions } from './types.ts';
 import { MeasurementTool } from './measurementTool.ts';
 import { computeOverhangColors, type OverhangAnalysis } from './overhangAnalyzer.ts';
 import { BuildPlateManager, type FitResult } from './buildPlate.ts';
+import { analyzeMeshTopology, type MeshDiagnosticReport } from './meshDiagnostics.ts';
 
 export class STLViewer {
   public container: HTMLElement;
@@ -22,6 +23,8 @@ export class STLViewer {
   private currentMesh: THREE.Mesh | null = null;
   private wireframeMesh: THREE.Mesh | null = null;
   private boundingBoxHelper: THREE.Box3Helper | null = null;
+  private defectLines: THREE.LineSegments | null = null;
+  private diagnosticReport: MeshDiagnosticReport | null = null;
   private comMarker: THREE.Group | null = null;
   private gridHelper: THREE.GridHelper | null = null;
   private groundPlane: THREE.Mesh | null = null;
@@ -255,6 +258,11 @@ export class STLViewer {
       this.boundingBoxHelper.dispose();
       this.boundingBoxHelper = null;
     }
+    if (this.defectLines) {
+      this.scene.remove(this.defectLines);
+      this.defectLines.geometry.dispose();
+      this.defectLines = null;
+    }
 
     // Geometry metadata
     geometry.computeBoundingBox();
@@ -288,6 +296,20 @@ export class STLViewer {
     this.boundingBoxHelper = new THREE.Box3Helper(this.modelBoundingBox, new THREE.Color(0x38bdf8));
     this.boundingBoxHelper.visible = this.options.showBoundingBox;
     this.scene.add(this.boundingBoxHelper);
+
+    // Mesh Topology Diagnostics
+    this.diagnosticReport = analyzeMeshTopology(geometry);
+    if (this.diagnosticReport.defectEdgesGeometry) {
+      const defectMat = new THREE.LineBasicMaterial({
+        color: 0xf43f5e,
+        depthTest: false,
+        linewidth: 2,
+      });
+      this.defectLines = new THREE.LineSegments(this.diagnosticReport.defectEdgesGeometry, defectMat);
+      this.defectLines.renderOrder = 999;
+      this.defectLines.visible = false;
+      this.scene.add(this.defectLines);
+    }
 
     // Update clipping limits
     this.updateClipping();
@@ -671,6 +693,16 @@ export class STLViewer {
     this.updateClipping();
     this.buildPlate.checkFit(this.modelBoundingBox);
     this.onCameraChange?.();
+  }
+
+  public getDiagnosticReport(): MeshDiagnosticReport | null {
+    return this.diagnosticReport;
+  }
+
+  public setHighlightDefects(enabled: boolean) {
+    if (this.defectLines) {
+      this.defectLines.visible = enabled;
+    }
   }
 
   public getBoundingBox(): THREE.Box3 | null {
