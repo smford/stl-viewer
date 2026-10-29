@@ -760,6 +760,39 @@ html, body {
   margin-bottom: 8px;
 }
 
+.mt-2 {
+  margin-top: 8px;
+}
+
+.mb-1 {
+  margin-bottom: 4px;
+}
+
+.glass-select-sm, .glass-input-sm {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-glass-bright);
+  color: var(--text-main);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 0.76rem;
+  font-family: var(--font-sans);
+  outline: none;
+}
+
+.glass-input-sm {
+  width: 70px;
+  text-align: right;
+  font-family: var(--font-mono);
+}
+
+.estimator-results {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 /* Shading Pill Buttons */
 .shading-pill-group {
   display: grid;

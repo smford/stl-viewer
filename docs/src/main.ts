@@ -99,6 +99,7 @@ let viewer: STLViewer;
 let gizmo: OrientationGizmo;
 let currentBuffer: ArrayBuffer | null = null;
 let currentFileName = 'model.stl';
+let currentModelVolumeCm3 = 0;
 
 // DOM Element References
 const viewportContainer = document.getElementById('viewport-container') as HTMLElement;
@@ -147,6 +148,15 @@ const dimY = document.getElementById('dim-y') as HTMLElement;
 const dimZ = document.getElementById('dim-z') as HTMLElement;
 const statFilesize = document.getElementById('stat-filesize') as HTMLElement;
 const statIntegrity = document.getElementById('stat-integrity') as HTMLElement;
+
+// Filament Estimator Elements
+const calcMaterial = document.getElementById('calc-material') as HTMLSelectElement;
+const calcInfill = document.getElementById('calc-infill') as HTMLInputElement;
+const calcInfillVal = document.getElementById('calc-infill-val') as HTMLElement;
+const calcSpoolPrice = document.getElementById('calc-spool-price') as HTMLInputElement;
+const estWeight = document.getElementById('est-weight') as HTMLElement;
+const estLength = document.getElementById('est-length') as HTMLElement;
+const estCost = document.getElementById('est-cost') as HTMLElement;
 
 // Appearance Controls
 const shadingButtons = document.querySelectorAll<HTMLButtonElement>('[data-shading]');
@@ -222,6 +232,31 @@ function updatePrinterFitUI() {
 }
 
 /**
+ * Update Filament & Cost Estimator
+ */
+function updateFilamentEstimator() {
+  if (currentModelVolumeCm3 <= 0) {
+    estWeight.textContent = '0.0 g';
+    estLength.textContent = '0.0 m';
+    estCost.textContent = '$0.00';
+    return;
+  }
+
+  const density = parseFloat(calcMaterial.value) || 1.24;
+  const infillPercent = parseFloat(calcInfill.value) / 100;
+  // Account for solid exterior perimeters (~20% of volume) + infill remainder
+  const effectiveVolume = currentModelVolumeCm3 * (0.2 + 0.8 * infillPercent);
+  const weightGrams = effectiveVolume * density;
+  const pricePerKg = parseFloat(calcSpoolPrice.value) || 20.0;
+  const cost = (weightGrams / 1000) * pricePerKg;
+  const lengthMeters = effectiveVolume / 2.405; // 1.75mm cross section: 2.405 mm² = 0.02405 cm²
+
+  estWeight.textContent = `${weightGrams.toFixed(1)} g`;
+  estLength.textContent = `${lengthMeters.toFixed(1)} m`;
+  estCost.textContent = `$${cost.toFixed(2)}`;
+}
+
+/**
  * Update UI Stats Panel
  */
 function updateStatsUI(loaded: LoadedModel) {
@@ -232,6 +267,8 @@ function updateStatsUI(loaded: LoadedModel) {
   // Format volume (convert mm³ to cm³)
   const volumeCm3 = stats.volume / 1000;
   statVolume.textContent = `${volumeCm3.toFixed(2)} cm³`;
+  currentModelVolumeCm3 = volumeCm3;
+  updateFilamentEstimator();
 
   // Format surface area (convert mm² to cm²)
   const areaCm2 = stats.surfaceArea / 100;
@@ -642,6 +679,14 @@ function setupEventHandlers() {
 
   // Printer Build Volume Selector
   printerSelect.addEventListener('change', updatePrinterFitUI);
+
+  // Filament Estimator Listeners
+  calcMaterial.addEventListener('change', updateFilamentEstimator);
+  calcInfill.addEventListener('input', () => {
+    calcInfillVal.textContent = `${calcInfill.value}%`;
+    updateFilamentEstimator();
+  });
+  calcSpoolPrice.addEventListener('input', updateFilamentEstimator);
 
   // Grid / Shadow / BBox Toggles
   toggleGrid.addEventListener('change', () => {

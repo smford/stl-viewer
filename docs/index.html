@@ -196,6 +196,50 @@
             </div>
 
             <div class="section-block">
+              <h3 class="section-title">Filament & Cost Estimator</h3>
+              <div class="dimensions-card">
+                <div class="dim-row">
+                  <label for="calc-material" class="dim-axis">Material</label>
+                  <select id="calc-material" class="glass-select-sm">
+                    <option value="1.24" selected>PLA (1.24 g/cm³)</option>
+                    <option value="1.27">PETG (1.27 g/cm³)</option>
+                    <option value="1.04">ABS (1.04 g/cm³)</option>
+                    <option value="1.21">TPU (1.21 g/cm³)</option>
+                    <option value="1.15">Resin (1.15 g/cm³)</option>
+                  </select>
+                </div>
+
+                <div class="slider-control mt-2 mb-1">
+                  <div class="slider-header">
+                    <label for="calc-infill">Infill</label>
+                    <span id="calc-infill-val" class="slider-val">20%</span>
+                  </div>
+                  <input type="range" id="calc-infill" min="10" max="100" step="5" value="20" />
+                </div>
+
+                <div class="dim-row">
+                  <label for="calc-spool-price" class="dim-axis">Spool Price ($/kg)</label>
+                  <input type="number" id="calc-spool-price" class="glass-input-sm" value="20.00" min="5" max="200" step="1" />
+                </div>
+
+                <div class="estimator-results mt-2">
+                  <div class="dim-row">
+                    <span class="info-key">Print Weight</span>
+                    <span id="est-weight" class="dim-val font-mono">0.0 g</span>
+                  </div>
+                  <div class="dim-row">
+                    <span class="info-key">1.75mm Length</span>
+                    <span id="est-length" class="dim-val font-mono">0.0 m</span>
+                  </div>
+                  <div class="dim-row">
+                    <span class="info-key">Est. Cost</span>
+                    <span id="est-cost" class="meas-dist font-mono">$0.00</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="section-block">
               <div class="section-header-flex">
                 <h3 class="section-title">Point-to-Point Caliper</h3>
                 <button id="btn-clear-measurements" class="text-btn hidden">Clear</button>
